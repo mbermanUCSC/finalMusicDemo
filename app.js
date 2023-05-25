@@ -98,10 +98,10 @@ function create() {
             bpm += 10;
             Tone.Transport.bpm.rampTo(bpm, 0.5); // The second parameter is the ramp time in seconds.
             kick.volume.value += 1;
-            synth.volume.value -= 3;
-            hiHat.volume.value -= 3;
-            snare.volume.value -= 3;
-            melodySynth.volume.value -= 3
+            synth.volume.value -= 5;
+            hiHat.volume.value -= 5;
+            snare.volume.value -= 5;
+            melodySynth.volume.value -= 5
         }
         else{
             synth.volume.value = -Infinity;
@@ -113,19 +113,22 @@ function create() {
     let button4 = this.add.sprite(600, 300, 'button').setInteractive();
     button4.on('pointerdown', function () {
         if(bpm == 180){
-            synth.volume.value = -34;
-            hiHat.volume.value = -34;
-            snare.volume.value = -24;
-            melodySynth.volume.value = -34;
+            synth.volume.value = -55;
+            hiHat.volume.value = -55;
+            snare.volume.value = -55;
+            melodySynth.volume.value = -55;
+            kick.volume.value = 9;
         }
         if(bpm > 20){
             bpm -= 10;
             Tone.Transport.bpm.rampTo(bpm, 0.5); // The second parameter is the ramp time in seconds.
-            kick.volume.value -= 1;
-            synth.volume.value += 3;
-            hiHat.volume.value += 3;
-            snare.volume.value += 3;
-            melodySynth.volume.value +=3;
+            if(bpm != 100){
+                kick.volume.value -= 1;
+                synth.volume.value += 5;
+                hiHat.volume.value += 5;
+                snare.volume.value += 5;
+                melodySynth.volume.value +=5;
+            }
         }
     });
 }
