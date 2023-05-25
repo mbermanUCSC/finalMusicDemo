@@ -10,13 +10,28 @@ const config = {
     }
 };
 
-let synth, hiHat, snare, kick, melodySynth;
-let chords = [['A3', 'C4', 'E4'], ['F3', 'A3', 'C4'], ['C3', 'E3', 'G3'], ['G3', 'B3', 'D4']];
-let scale = ['A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4','A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5'];
+// A minor
+let chords = [['A4', 'C4', 'E4'], ['F3', 'A4', 'C4'], ['C4', 'E3', 'G3'], ['G3', 'B4', 'D4']];
+let scale = ['A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3','A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4'];
+
+// Song init.
 let melodyIndex = 0;
 let isMelodyPlaying = false;
-let bpm = 100;
+let bpm = 110;
+let masterTempo = 110;
 let loopEvent;
+
+let defaultVolumes = {
+    'synth': -15,
+    'melodySynth': -15,
+    'hiHat': -25,
+    'snare': -15,
+    'kick': 0
+};
+
+// Synths
+let synth, hiHat, snare, kick, melodySynth;
+
 let bpmText, synthVolumeText, melodyVolumeText, hiHatVolumeText, snareVolumeText, kickVolumeText;
 
 function preload() {
@@ -24,6 +39,8 @@ function preload() {
 }
 
 function create() {
+
+    // Text fields
     bpmText = this.add.text(10, 10, `BPM: ${bpm}`, { fontSize: '16px', fill: '#000' });
     synthVolumeText = this.add.text(10, 30, '', { fontSize: '16px', fill: '#000' });
     melodyVolumeText = this.add.text(10, 50, '', { fontSize: '16px', fill: '#000' });
@@ -31,12 +48,18 @@ function create() {
     snareVolumeText = this.add.text(10, 90, '', { fontSize: '16px', fill: '#000' });
     kickVolumeText = this.add.text(10, 110, '', { fontSize: '16px', fill: '#000' });
 
+
+    // Chord synth
     synth = new Tone.PolySynth(Tone.Synth).toDestination();
-    synth.volume.value = -20;
+    synth.volume.value = defaultVolumes['synth'];
+
+    // Melody synth
     melodySynth = new Tone.PolySynth(Tone.Synth).toDestination();
-    melodySynth.volume.value = -10;
+    melodySynth.volume.value = defaultVolumes['melodySynth'];
+
+    // hh synth
     hiHat = new Tone.NoiseSynth({
-        volume: -10,
+        volume: defaultVolumes['hiHat'],
         envelope: {
             attack: 0.01,
             decay: 0.1
@@ -48,7 +71,10 @@ function create() {
             octaves: -2.5
         }
     }).toDestination();
+
+    // snare synth
     snare = new Tone.MembraneSynth({
+        volume: defaultVolumes['snare'],
         pitchDecay: 0.05,
         octaves: 10,
         oscillator: {
@@ -56,13 +82,16 @@ function create() {
         },
         envelope: {
             attack: 0.001,
-            decay: 0.2,
+            decay: 0.8,
             sustain: 0.01,
-            release: 0.2,
+            release: 1.4,
             attackCurve: "exponential"
         }
     }).toDestination();
+
+    // kick synth
     kick = new Tone.MembraneSynth({
+        volume: defaultVolumes['kick'],
         pitchDecay: 0.05,
         octaves: 10,
         oscillator: {
@@ -77,6 +106,7 @@ function create() {
         }
     }).toDestination();
     
+    // Start track
     let button1 = this.add.sprite(150, 300, 'button').setInteractive();
     button1.on('pointerdown', async function () {
         await Tone.start();
@@ -85,50 +115,32 @@ function create() {
             startMelodyLoop();
         }
     });
+
+    // Stop track
     let button2 = this.add.sprite(300, 300, 'button').setInteractive();
     button2.on('pointerdown', async function () {
         if (isMelodyPlaying) {
             isMelodyPlaying = false;
+            Tone.Transport.cancel(0);
             Tone.Transport.stop();
         }
     });
+
+    // Ramp up
     let button3 = this.add.sprite(450, 300, 'button').setInteractive();
     button3.on('pointerdown', function () {
-        if(bpm < 180){
-            bpm += 10;
-            Tone.Transport.bpm.rampTo(bpm, 0.5); // The second parameter is the ramp time in seconds.
-            kick.volume.value += 1;
-            synth.volume.value -= 5;
-            hiHat.volume.value -= 5;
-            snare.volume.value -= 5;
-            melodySynth.volume.value -= 5
-        }
-        else{
-            synth.volume.value = -Infinity;
-            hiHat.volume.value = -Infinity;
-            snare.volume.value = -Infinity;
-            melodySynth.volume.value = -Infinity
+        if(bpm < 200){
+            Tone.Transport.bpm.rampTo(masterTempo + 100, 0.5);
+            rampDownVolumes();
         }
     });
+
+    // Ramp down
     let button4 = this.add.sprite(600, 300, 'button').setInteractive();
     button4.on('pointerdown', function () {
-        if(bpm == 180){
-            synth.volume.value = -55;
-            hiHat.volume.value = -55;
-            snare.volume.value = -55;
-            melodySynth.volume.value = -55;
-            kick.volume.value = 9;
-        }
-        if(bpm > 20){
-            bpm -= 10;
-            Tone.Transport.bpm.rampTo(bpm, 0.5); // The second parameter is the ramp time in seconds.
-            if(bpm != 100){
-                kick.volume.value -= 1;
-                synth.volume.value += 5;
-                hiHat.volume.value += 5;
-                snare.volume.value += 5;
-                melodySynth.volume.value +=5;
-            }
+        if(bpm != 0){
+            Tone.Transport.bpm.rampTo(masterTempo, ); // The second parameter is the ramp time in seconds.
+            rampUpVolumes();
         }
     });
 }
@@ -154,6 +166,22 @@ function startMelodyLoop() {
         melodyIndex++;
     }, noteDuration + 's');
     Tone.Transport.start();
+}
+
+function rampUpVolumes() {
+    synth.volume.rampTo(defaultVolumes['synth'] + 5, 0.5);
+    melodySynth.volume.rampTo(defaultVolumes['melodySynth'] + 5, 0.5);
+    hiHat.volume.rampTo(defaultVolumes['hiHat'] + 5, 0.5);
+    snare.volume.rampTo(defaultVolumes['snare'] + 5, 0.5);
+    //kick.volume.rampTo(defaultVolumes['kick'] + 5, 0.5);
+}
+
+function rampDownVolumes() {
+    synth.volume.rampTo(-Infinity, 2);
+    melodySynth.volume.rampTo(-Infinity, 2);
+    hiHat.volume.rampTo(-Infinity, 2);
+    snare.volume.rampTo(-Infinity, 2);
+   //kick.volume.rampTo(defaultVolumes['kick'], 2);
 }
 
 function update() {
