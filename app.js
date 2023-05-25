@@ -10,9 +10,28 @@ const config = {
     }
 };
 
-let chords = [['A4', 'C4', 'E4'], ['F3', 'A4', 'C4'], ['C4', 'E3', 'G3'], ['G3', 'B4', 'D4']];
-let scale = ['A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3','A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4'];
+let chords = [
+    ['A4', 'C4', 'E4'],  // Am
+    ['B4', 'D4', 'F4'],  // Bdim
+    ['C4', 'E4', 'G4'],  // C
+    ['D4', 'F4', 'A4'],  // Dm
+    ['E4', 'G4', 'B4'],  // Em
+    ['F4', 'A4', 'C5'],  // F
+    ['G4', 'B4', 'D5'],  // G
+    ['A5', 'C5', 'E5'],  // Am octave higher
+    ['B5', 'D5', 'F5'],  // Bdim octave higher
+    ['C5', 'E5', 'G5'],  // C octave higher
+    ['D5', 'F5', 'A5'],  // Dm octave higher
+    ['E5', 'G5', 'B5'],  // Em octave higher
+    ['F5', 'A5', 'C6'],  // F octave higher
+    ['G5', 'B5', 'D6'],  // G octave higher
+];
 
+let scale = ['A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3','A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4'];
+let durations = ['4n', '8n', '2n']; 
+
+
+let currentNote = 'A2';  // Starting note
 let melodyIndex = 0;
 let isMelodyPlaying = false;
 let bpm = 80;
@@ -26,6 +45,24 @@ let defaultVolumes = {
     'snare': -15,
     'kick': 0
 };
+
+let transitionMatrix = {
+    'A2': { 'B2': 0.5, 'A2': 0.5 },
+    'B2': { 'A2': 0.5, 'C3': 0.5 },
+    'C3': { 'B2': 0.5, 'D3': 0.5 },
+    'D3': { 'C3': 0.5, 'E3': 0.5 },
+    'E3': { 'D3': 0.5, 'F3': 0.5 },
+    'F3': { 'E3': 0.5, 'G3': 0.5 },
+    'G3': { 'F3': 0.5, 'A3': 0.5 },
+    'A3': { 'G3': 0.5, 'B3': 0.5 },
+    'B3': { 'A3': 0.5, 'C4': 0.5 },
+    'C4': { 'B3': 0.5, 'D4': 0.5 },
+    'D4': { 'C4': 0.5, 'E4': 0.5 },
+    'E4': { 'D4': 0.5, 'F4': 0.5 },
+    'F4': { 'E4': 0.5, 'G4': 0.5 },
+    'G4': { 'F4': 0.5, 'G4': 0.5 },
+};
+
 
 let synth, hiHat, snare, kick, melodySynth;
 let bpmText, synthVolumeText, melodyVolumeText, hiHatVolumeText, snareVolumeText, kickVolumeText;
@@ -134,17 +171,39 @@ function create() {
 }
 
 function randomMelodyNote() {
-    let noteIndex = Math.floor(Math.random() * scale.length);
-    return scale[noteIndex];
+    let transitions = transitionMatrix[currentNote];
+    let rand = Math.random();
+    let cumulativeProbability = 0;
+
+    for (let note in transitions) {
+        cumulativeProbability += transitions[note];
+        if (rand < cumulativeProbability) {
+            currentNote = note;
+            break;
+        }
+    }
+
+    return currentNote;
 }
+
+function randomDuration() {
+    let index = Math.floor(Math.random() * durations.length);
+    return durations[index];
+}
+
 
 function startMelodyLoop() {
     let loop = new Tone.Loop((time) => {
-        let noteDuration = "4n";
-        let chord = chords[melodyIndex % chords.length];
+        // Use random duration for the notes
+        let noteDuration = randomDuration();
+
+        // Select a random chord and trigger the notes
+        let chord = chords[Math.floor(Math.random() * chords.length)];
         chord.forEach(note => {
             synth.triggerAttackRelease(note, noteDuration, time);
         });
+
+        // Trigger the melody note with a random note and duration
         melodySynth.triggerAttackRelease(randomMelodyNote(), noteDuration, time);
 
         // Hi-Hat on every eighth note
@@ -166,6 +225,8 @@ function startMelodyLoop() {
 
     Tone.Transport.start();
 }
+
+
 
 
 
